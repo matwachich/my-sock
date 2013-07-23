@@ -18,10 +18,7 @@
 #endif
 
 #include "mysock.bi"
-#include "funcs.bi"
-
-' uncomment the "export" before building a dll
-#define MYSOCK_EXPORT export
+#include "internals.bi"
 
 ' ---------------------------------------------------------------------------- '
 
@@ -29,7 +26,7 @@
  
 ' ---------------------------------------------------------------------------- '
 
-'' @brief Initiate MySock (WSAStartup)
+'/ @brief Initiate MySock (WSAStartup)
  '
  ' @return 1 on succes, 0 otherwise
  '/
@@ -41,7 +38,7 @@ function MySock_Startup () as integer MYSOCK_EXPORT
 	return 1
 end function
 
-'' @brief Shutdown MySock (WSACleanup)
+'/ @brief Shutdown MySock (WSACleanup)
  '
  ' @return 1 on succes, 0 otherwise
  '/
@@ -54,6 +51,18 @@ end function
 
 ' ---------------------------------------------------------------------------- '
 
+'/ @brief Convert an internat name to IP address
+ '
+ ' @param host [in] Internet name
+ ' @param protocol [in] IP version to use (Enum protocol_e)
+ '	MYSOCK_PROT_AUTO - Auto-select (will select IPv6 first if available)
+ '	MYSOCK_PROT_IPV4 - Force IPv4
+ '	MYSOCK_PROT_IPV6 - Force IPv6
+ ' @param ip [out] Buffer that will contain the IP address
+ ' @param ip_len [in] Size of the buffer (in bytes)
+ '
+ ' @return 1 on succes, 0 otherwise
+ '/
 function MySock_Host2ip (host as zstring, protocol as protocol_e, ip as zstring, ip_len as uinteger) as integer MYSOCK_EXPORT
 	dim as addrinfo hints
 	clear(hints, 0, sizeof(hints))
@@ -82,6 +91,16 @@ function MySock_Host2ip (host as zstring, protocol as protocol_e, ip as zstring,
 	return 1
 end function
 
+'/ @brief Convert an internat name to IP address
+ '
+ ' @param host [in] Internet name
+ ' @param protocol [in] IP version to use (Enum protocol_e)
+ '	MYSOCK_PROT_AUTO - Auto-select (will select IPv6 first if available)
+ '	MYSOCK_PROT_IPV4 - Force IPv4
+ '	MYSOCK_PROT_IPV6 - Force IPv6
+ '
+ ' @return String containing the IP address on succes, empty string ("") otherwise
+ '/
 function MySock_Host2ipStr (host as zstring, protocol as protocol_e) as string MYSOCK_EXPORT
 	dim as zstring * INET6_ADDRSTRLEN ip
 	if MySock_Host2ip(host, protocol, ip, INET6_ADDRSTRLEN) = 1 then
@@ -91,10 +110,19 @@ function MySock_Host2ipStr (host as zstring, protocol as protocol_e) as string M
 	end if
 end function
 
+'/ @brief Get the host name of this computer
+ '
+ ' @param host [out] Buffer that will contain the host name
+ ' @param host_len [in] Size of the buffer (in bytes)
+ '/
 sub MySock_MyHost (host as zstring, host_len as uinteger) MYSOCK_EXPORT
 	gethostname(@host, host_len)
 end sub
 
+'/ @brief Get the host name of this computer
+ '
+ ' @return String containing the host name on succes, empty string ("") otherwise
+ '/
 function MySock_MyHostStr () as string MYSOCK_EXPORT
 	dim as zstring * 256 host = ""
 	gethostname(@host, 256)
