@@ -208,6 +208,7 @@ function MyCln_Close (myCln as myCln_t ptr) as integer MYSOCK_EXPORT
 	dim as integer ret = closesocket(myCln->sock)
 	MyCln_Process(myCln)
 	
+	if myCln->recv_buff <> 0 then deallocate(myCln->recv_buff): myCln->recv_buff = 0
 	myCln->ip = ""
 	
 	return ret
