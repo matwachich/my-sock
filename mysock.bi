@@ -15,6 +15,8 @@ end enum
 
 ' ---
 ' Type definitions
+type MYSOCK as integer
+
 type mySrv_t as _mySrv_t
 type myCln_t as _myCln_t
 
@@ -38,7 +40,7 @@ declare function MySock_Shutdown	() as integer
 declare function 	MySock_Host2ip		(host as zstring, protocol as protocol_e, ip as zstring, ip_len as uinteger) as integer
 declare function 	MySock_Host2ipStr	(host as zstring, protocol as protocol_e) as string
 declare sub 		MySock_MyHost		(host as zstring, host_len as uinteger)
-declare function 	MySock_MyHostStr	() as string	
+declare function 	MySock_MyHostStr	() as string
 
 ' ---
 ' Server functions
@@ -56,6 +58,7 @@ declare sub 		MySrv_SetDefBuffLen		(mySrv as mySrv_t ptr, default_buff_len as ui
 declare function 	MySrv_GetDefBuffLen		(mySrv as mySrv_t ptr) as uinteger
 declare sub 		MySrv_SetDefKeepAlive	(mySrv as mySrv_t ptr, timeout as uinteger, interval as uinteger)
 declare sub 		MySrv_GetDefKeepAlive	(mySrv as mySrv_t ptr, timeout as uinteger ptr, interval as uinteger ptr)
+declare function	MySrv_GetSocket			(mySrv as mySrv_t ptr) as integer
 declare sub 		MySrv_SetUserData		(mySrv as mySrv_t ptr, user_data as any ptr)
 declare function	MySrv_GetUserData		(mySrv as mySrv_t ptr) as any ptr
 
@@ -77,6 +80,7 @@ declare function 	MySrv_PeerSetBuffLen	(mySrv as mySrv_t ptr, peer_id as integer
 declare function 	MySrv_PeerGetBuffLen	(mySrv as mySrv_t ptr, peer_id as integer) as uinteger
 declare sub 		MySrv_PeerSetKeepAlive	(mySrv as mySrv_t ptr, peer_id as integer, timeout as uinteger, interval as uinteger)
 declare sub 		MySrv_PeerGetKeepAlive	(mySrv as mySrv_t ptr, peer_id as integer, timeout as uinteger ptr, interval as uinteger ptr)
+declare function	MySrv_PeerGetSocket		(muSrv as mySrv_t ptr, peer_id as integer) as integer
 declare function 	MySrv_PeerSetUserData	(mySrv as mySrv_t ptr, peer_id as integer, user_data as any ptr) as integer
 declare function 	MySrv_PeerGetUserData	(mySrv as mySrv_t ptr, peer_id as integer) as any ptr
 
@@ -105,6 +109,7 @@ declare function	MyCln_SetBuffLen	(myCln as myCln_t ptr, buff_len as uinteger) a
 declare function	MyCln_GetBuffLen	(myCln as myCln_t ptr) as uinteger
 declare function 	MyCln_SetKeepAlive 	(myCln as myCln_t ptr, timeout as uinteger, interval as uinteger) as integer
 declare sub 		MyCln_GetKeepAlive 	(myCln as myCln_t ptr, timeout as uinteger ptr, interval as uinteger ptr)
+declare function	MyCln_GetSocket		(myCln as myCln_t ptr) as integer
 declare sub 		MyCln_SetUserData 	(myCln as myCln_t ptr, user_data as any ptr)
 declare function 	MyCln_GetUserData 	(myCln as myCln_t ptr) as any ptr
 

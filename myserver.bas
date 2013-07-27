@@ -3,6 +3,7 @@
 	'#define WIN32_LEAN_AND_MEAN
 	'#include "windows.bi"
 	#include "win\ws2tcpip.bi"
+	#include "win\mswsock.bi"
 	'type socklen_t as integer
 	
 	'/// Part of mstcpip.h ///'
@@ -28,7 +29,7 @@
 	dim as integer count = 0
 	for i as integer = 0 to srv->peers_max - 1
 		if PEER_CONNECTED(srv, i) then
-			closesocket(srv->peers[i].sock)
+			__closesocket(srv->peers[i].sock)
 			count += 1
 			if count >= srv->peers_count then exit for
 		end if
@@ -230,7 +231,7 @@ function MySrv_Start (mySrv as mySrv_t ptr, port as ushort) as integer MYSOCK_EX
 		exit do ' success
 		
 		try_next:
-		if mySrv->sock <> INVALID_SOCKET then closesocket(mySrv->sock)
+		if mySrv->sock <> INVALID_SOCKET then __closesocket(mySrv->sock)
 		mySrv->sock = INVALID_SOCKET
 		' ---
 		list = list->ai_next
@@ -266,7 +267,7 @@ function MySrv_Stop (mySrv as mySrv_t ptr) as integer MYSOCK_EXPORT
 	' close all peers
 	SRV_CLOSE_ALL(mySrv)
 	' ---
-	closesocket(mySrv->sock)
+	__closesocket(mySrv->sock)
 	mySrv->sock = INVALID_SOCKET
 	' ---
 	MySrv_Process(mySrv) ' to call disconnect callback
@@ -402,6 +403,18 @@ sub MySrv_GetDefKeepAlive (mySrv as mySrv_t ptr, timeout as uinteger ptr, interv
 	if interval <> 0 then *interval = mySrv->default_keepalive_interval
 end sub
 
+'/ @brief Get server's listening socket identifier
+ '
+ ' If the server is not started, then this function will return -1 (INVALID_SOCKET)
+ '
+ ' @param mySrv [in] Server pointer
+ '
+ ' @return Socket ID
+ '/
+function MySrv_GetSocket (mySrv as mySrv_t ptr) as integer
+	return mySrv->sock
+end function
+
 '/ @brief Set user data attached to a server
  '
  ' @param mySrv [in] Server pointer
@@ -481,7 +494,7 @@ sub MySrv_Process (mySrv as mySrv_t ptr) MYSOCK_EXPORT
 				if mySrv->onConnect <> NULL then mySrv->onConnect(mySrv, free_slot)
 			else
 				' sorry new_sock, server is full! :p
-				closesocket(new_sock)
+				__closesocket(new_sock)
 			end if
 		end if
 	end if
@@ -508,7 +521,7 @@ sub MySrv_Process (mySrv as mySrv_t ptr) MYSOCK_EXPORT
 		end select
 		' ---
 		if disconnect then
-			closesocket(mySrv->peers[i].sock) ' just to be sure
+			__closesocket(mySrv->peers[i].sock) ' just to be sure
 			if mySrv->onDisconnect <> NULL then
 				mySrv->onDisconnect(mySrv, i)
 			end if
@@ -581,7 +594,7 @@ function MySrv_Close (mySrv as mySrv_t ptr, peer_id as integer) as integer MYSOC
 	if not PEER_VALID(mySrv, peer_id) then return -1
 	if not PEER_CONNECTED(mySrv, peer_id) then return 0
 	' ---
-	if closesocket(mySrv->peers[peer_id].sock) = 0 then return 1
+	if __closesocket(mySrv->peers[peer_id].sock) = 0 then return 1
 	return 0
 end function
 
@@ -751,6 +764,22 @@ sub MySrv_PeerGetKeepAlive (mySrv as mySrv_t ptr, peer_id as integer, timeout as
 	if timeout <> 0 then *timeout = mySrv->peers[peer_id].keepalive_timeout
 	if interval <> 0 then *interval = mySrv->peers[peer_id].keepalive_interval
 end sub
+
+'/ @brief Get peer's socket identifier
+ '
+ ' If peer_id is not a valid ID or peer_id is not a connected peer, then -1
+ '	is returned (INVALID_SOCKET)
+ '
+ ' @param mySrv [in] Server pointer
+ ' @param peer_id [in] Peer ID
+ '
+ ' @return Socket ID
+ '/
+function MySrv_PeerGetSocket (muSrv as mySrv_t ptr, peer_id as integer) as integer
+	if not PEER_VALID(mySrv, peer_id) or not PEER_CONNECTED(mySrv, peer_id) then return -1
+	
+	return mySrv->peers[peer_id].sock
+end function
 
 '/ @brief Set user data attached to a connected peer
  '

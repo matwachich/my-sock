@@ -3,6 +3,7 @@
 	'#define WIN32_LEAN_AND_MEAN
 	'#include "windows.bi"
 	#include "win\ws2tcpip.bi"
+	#include "win\mswsock.bi"
 	'type socklen_t as integer
 	
 	'/// Part of mstcpip.h ///'
@@ -172,7 +173,7 @@ function MyCln_Connect (myCln as myCln_t ptr, timeout as uinteger) as integer MY
 		exit do
 		
 		try_next:
-		if myCln->sock <> INVALID_SOCKET then closesocket(myCln->sock)
+		if myCln->sock <> INVALID_SOCKET then __closesocket(myCln->sock)
 		myCln->sock = INVALID_SOCKET
 		' ---
 		list = list->ai_next
@@ -205,13 +206,13 @@ end function
 function MyCln_Close (myCln as myCln_t ptr) as integer MYSOCK_EXPORT
 	if not CLN_CONNECTED(myCln) then return 0
 	
-	dim as integer ret = closesocket(myCln->sock)
+	__closesocket(myCln->sock)
 	MyCln_Process(myCln)
 	
 	if myCln->recv_buff <> 0 then deallocate(myCln->recv_buff): myCln->recv_buff = 0
 	myCln->ip = ""
 	
-	return ret
+	return 1
 end function
 
 '/ @brief Check if a TCP Client is connected to it's server
@@ -367,7 +368,7 @@ sub MyCln_Process (myCln as myCln_t ptr) MYSOCK_EXPORT
 	if disconnect then
 		if myCln->onDisconnect then myCln->onDisconnect(myCln)
 		' ---
-		closesocket(myCln->sock)
+		__closesocket(myCln->sock)
 		myCln->sock = INVALID_SOCKET
 		' ---
 		if myCln->recv_buff <> 0 then deallocate(myCln->recv_buff): myCln->recv_buff = 0
@@ -472,6 +473,18 @@ sub MyCln_GetKeepAlive (myCln as myCln_t ptr, timeout as uinteger ptr, interval 
 	if timeout <> 0 then *timeout = myCln->keepalive_timeout
 	if interval <> 0 then *interval = myCln->keepalive_interval
 end sub
+
+'/ @brief Get client's socket identifier
+ '
+ ' If the client is disconnected, then -1 is returned (INVALID_SOCKET)
+ '
+ ' @param myCln [in] Client pointer
+ '
+ ' @return Socket ID
+ '/
+function	MyCln_GetSocket		(myCln as myCln_t ptr) as integer
+	return myCln->sock
+end function
 
 '/ @brief Set User data attached to a TCP Client
  '
