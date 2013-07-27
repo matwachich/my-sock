@@ -38,6 +38,7 @@
 ;_MySrv_GetDefBuffLen
 ;_MySrv_SetDefKeepAlive
 ;_MySrv_GetDefKeepAlive
+;_MySrv_GetSocket
 ;_MySrv_SetUserData
 ;_MySrv_GetUserData
 ;_MySrv_SetCallbacks
@@ -55,6 +56,7 @@
 ;_MySrv_PeerGetBuffLen
 ;_MySrv_PeerSetKeepAlive
 ;_MySrv_PeerGetKeepAlive
+;_MySrv_PeerGetSocket
 ;_MySrv_PeerSetUserData
 ;_MySrv_PeerGetUserData
 ;_MyCln_Create
@@ -75,6 +77,7 @@
 ;_MyCln_GetBuffLen
 ;_MyCln_SetKeepAlive
 ;_MyCln_GetKeepAlive
+;_MyCln_GetSocket
 ;_MyCln_SetUserData
 ;_MyCln_GetUserData
 ; ===============================================================================================================================
@@ -381,6 +384,20 @@ Func _MySrv_GetDefKeepAlive($pMySrv)
 	Return $aRet
 EndFunc
 
+;~ declare function		MySrv_GetSocket			(mySrv as mySrv_t ptr) as integer
+Func _MySrv_GetSocket($pMySrv)
+	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
+	; ---
+	Local $ret = DllCall($__gMySock_hDll, "int:cdecl", "MySrv_GetSocket", "ptr", $pMySrv)
+	If @error Then
+		Local $err = @error
+		If Not @Compiled Then ConsoleWrite("! DllCall error " & $err & " (MySrv_GetSocket)" & @CRLF)
+		Return SetError($err, 0, 0)
+	EndIf
+	; ---
+	Return $ret[0]
+EndFunc
+
 ;~ declare sub 			MySrv_SetUserData		(mySrv as mySrv_t ptr, user_data as any ptr)
 Func _MySrv_SetUserData($pMySrv, $iUserData)
 	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
@@ -664,6 +681,20 @@ Func _MySrv_PeerGetKeepAlive($pMySrv, $iPeerId)
 	; ---
 	Local $aRet[2] = [$ret[3], $ret[4]]
 	Return $aRet
+EndFunc
+
+;~ declare function		MySrv_PeerGetSocket		(muSrv as mySrv_t ptr, peer_id as integer) as integer
+Func _MySrv_PeerGetSocket($pMySrv, $iPeerId)
+	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
+	; ---
+	Local $ret = DllCall($__gMySock_hDll, "int:cdecl", "MySrv_PeerGetSocket", "ptr", $pMySrv, "int", $iPeerId)
+	If @error Then
+		Local $err = @error
+		If Not @Compiled Then ConsoleWrite("! DllCall error " & $err & " (MySrv_PeerGetSocket)" & @CRLF)
+		Return SetError($err, 0, 0)
+	EndIf
+	; ---
+	Return $ret[0]
 EndFunc
 
 ;~ declare function 	MySrv_PeerSetUserData		(mySrv as mySrv_t ptr, peer_id as integer, user_data as any ptr) as integer
@@ -969,6 +1000,20 @@ Func _MyCln_GetKeepAlive($pMyCln)
 	; ---
 	Local $aRet[2] = [$ret[2], $ret[3]]
 	Return $aRet
+EndFunc
+
+;~ declare function		MyCln_GetSocket		(myCln as myCln_t ptr) as integer
+Func _MyCln_GetSocket($pMyCln)
+	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
+	; ---
+	Local $ret = DllCall($__gMySock_hDll, "int:cdecl", "MyCln_GetSocket", "ptr", $pMyCln)
+	If @error Then
+		Local $err = @error
+		If Not @Compiled Then ConsoleWrite("! DllCall error " & $err & " (MyCln_GetSocket)" & @CRLF)
+		Return SetError($err, 0, 0)
+	EndIf
+	; ---
+	Return $ret[0]
 EndFunc
 
 ;~ declare sub 			MyCln_SetUserData 	(myCln as myCln_t ptr, user_data as any ptr)
