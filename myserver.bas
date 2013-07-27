@@ -192,7 +192,7 @@ function MySrv_Start (mySrv as mySrv_t ptr, port as ushort) as integer MYSOCK_EX
 	' ---
 	dim as addrinfo hints
 	clear(hints, 0, sizeof(hints))
-	dim as addrinfo ptr list
+	dim as addrinfo ptr list, to_free
 
 	hints.ai_family = mySrv->protocol ' maps to AF_UNSPEC, AF_INET, AF_INET6
 	hints.ai_socktype = SOCK_STREAM
@@ -210,6 +210,8 @@ function MySrv_Start (mySrv as mySrv_t ptr, port as ushort) as integer MYSOCK_EX
 		#endif
 		return 0
 	end if
+	
+	to_free = list
 
 	dim as byte yes = 1
 	dim as ulong yes2 = 1
@@ -227,7 +229,7 @@ function MySrv_Start (mySrv as mySrv_t ptr, port as ushort) as integer MYSOCK_EX
 			goto try_next
 		end if
 		
-		freeaddrinfo(list)
+		freeaddrinfo(to_free)
 		exit do ' success
 		
 		try_next:
@@ -239,7 +241,7 @@ function MySrv_Start (mySrv as mySrv_t ptr, port as ushort) as integer MYSOCK_EX
 			#ifdef MYSOCK_DEBUG
 			print "! MySrv_Start failed - (unable to create/bind/listen socket - err " ; WSAGetLastError() ; ")"
 			#endif
-			freeaddrinfo(list)
+			freeaddrinfo(to_free)
 			return 0
 		end if
 	loop

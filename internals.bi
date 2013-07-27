@@ -19,6 +19,6 @@ declare function sockaddr2str (addr as sockaddr_storage ptr, addr_len as integer
 
 declare function af2prot (af as integer) as integer
 
-declare function prot2af (af as integer) as integer
+declare function prot2af (prot as integer) as integer
 
 #endif ' __MYSOCK_INTERNALS__

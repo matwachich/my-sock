@@ -124,7 +124,7 @@ function MyCln_Connect (myCln as myCln_t ptr, timeout as uinteger) as integer MY
 	if CLN_CONNECTED(myCln) then return 0
 	' ---
 	dim as addrinfo hints: clear(hints, 0, sizeof(hints))
-	dim as addrinfo ptr list
+	dim as addrinfo ptr list, to_free
 	
 	hints.ai_family = myCln->protocol
 	hints.ai_socktype = SOCK_STREAM
@@ -141,6 +141,8 @@ function MyCln_Connect (myCln as myCln_t ptr, timeout as uinteger) as integer MY
 		#endif
 		return 0
 	end if
+	
+	to_free = list
 	
 	dim as ulong yes = 1
 	dim as timeval tv
@@ -169,7 +171,7 @@ function MyCln_Connect (myCln as myCln_t ptr, timeout as uinteger) as integer MY
 		
 		' /// /// '
 		sockaddr2ipport(cast(sockaddr_storage ptr, list->ai_addr), list->ai_addrlen, myCln->ip, INET6_ADDRSTRLEN, 0)
-		freeaddrinfo(list)
+		freeaddrinfo(to_free)
 		exit do
 		
 		try_next:
@@ -181,7 +183,7 @@ function MyCln_Connect (myCln as myCln_t ptr, timeout as uinteger) as integer MY
 			#ifdef MYSOCK_DEBUG
 			print "! MyCln_Connect failed - (unable to create/connect socket - err " ; WSAGetLastError() ; ")"
 			#endif
-			freeaddrinfo(list)
+			freeaddrinfo(to_free)
 			return -1
 		end if
 	loop

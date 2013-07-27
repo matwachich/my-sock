@@ -65,8 +65,8 @@ function af2prot (af as integer) as integer
 	end select
 end function
 
-function prot2af (af as integer) as integer
-	select case af
+function prot2af (prot as integer) as integer
+	select case prot
 		case MYSOCK_PROT_AUTO
 			return AF_UNSPEC
 		case MYSOCK_PROT_IPV4
