@@ -42,6 +42,20 @@ declare function 	MySock_Host2ipStr	(host as zstring, protocol as protocol_e) as
 declare sub 		MySock_MyHost		(host as zstring, host_len as uinteger)
 declare function 	MySock_MyHostStr	() as string
 
+declare function	MySock_SocketGetAddr		(sock as MYSOCK, ip as zstring, ip_len as uinteger, port as ushort ptr) as integer
+declare function	MySock_SocketGetAddrStr		(sock as MYSOCK, with_port as integer) as string
+declare function	MySock_SocketGetPeerAddr	(sock as MYSOCK, ip as zstring, ip_len as uinteger, port as ushort ptr) as integer
+declare function	MySock_SocketGetPeerAddrStr	(sock as MYSOCK, with_port as integer) as string
+
+' ---
+' TCP Sockets (AutoIt3-like)
+declare function	MyTcp_Accept		(sock as MYSOCK) as MYSOCK
+declare function	MyTcp_CloseSocket	(sock as MYSOCK) as integer
+declare function	MyTcp_Connect		(host as zstring, port as ushort, protocol as protocol_e, timeout as uinteger) as MYSOCK
+declare function	MyTcp_Listen		(port as ushort, protocol as protocol_e, max_conn as uinteger) as MYSOCK
+declare function	MyTcp_Recv			(sock as MYSOCK, data_ as ubyte ptr, data_len as uinteger) as integer
+declare function	MyTcp_Send			(sock as MYSOCK, data_ as ubyte ptr, data_len as uinteger) as integer
+
 ' ---
 ' Server functions
 declare function 	MySrv_Create			(max_peers as uinteger, protocol as protocol_e) as mySrv_t ptr
@@ -80,7 +94,7 @@ declare function 	MySrv_PeerSetBuffLen	(mySrv as mySrv_t ptr, peer_id as integer
 declare function 	MySrv_PeerGetBuffLen	(mySrv as mySrv_t ptr, peer_id as integer) as uinteger
 declare sub 		MySrv_PeerSetKeepAlive	(mySrv as mySrv_t ptr, peer_id as integer, timeout as uinteger, interval as uinteger)
 declare sub 		MySrv_PeerGetKeepAlive	(mySrv as mySrv_t ptr, peer_id as integer, timeout as uinteger ptr, interval as uinteger ptr)
-declare function	MySrv_PeerGetSocket		(muSrv as mySrv_t ptr, peer_id as integer) as integer
+declare function	MySrv_PeerGetSocket		(mySrv as mySrv_t ptr, peer_id as integer) as integer
 declare function 	MySrv_PeerSetUserData	(mySrv as mySrv_t ptr, peer_id as integer, user_data as any ptr) as integer
 declare function 	MySrv_PeerGetUserData	(mySrv as mySrv_t ptr, peer_id as integer) as any ptr
 

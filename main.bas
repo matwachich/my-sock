@@ -131,4 +131,78 @@ end function
 
 ' ---------------------------------------------------------------------------- '
 
+'/ @brief 
+ '
+ ' @param 
+ ' @param 
+ '
+ ' @return 
+ '/
+function MySock_SocketGetAddr (sock as MYSOCK, ip as zstring, ip_len as uinteger, port as ushort ptr) as integer MYSOCK_EXPORT
+	dim as sockaddr_storage addr
+	dim as integer addr_len = sizeof(addr)
+	
+	if getsockname(sock, cast(sockaddr ptr, @addr), @addr_len) = 0 then
+		return sockaddr2ipport(@addr, addr_len, ip, ip_len, port)
+	else
+		return 0
+	end if
+end function
+
+'/ @brief 
+ '
+ ' @param 
+ ' @param 
+ '
+ ' @return 
+ '/
+function MySock_SocketGetAddrStr (sock as MYSOCK, with_port as integer) as string MYSOCK_EXPORT
+	dim as sockaddr_storage addr
+	dim as integer addr_len = sizeof(addr)
+	
+	if getsockname(sock, cast(sockaddr ptr, @addr), @addr_len) = 0 then
+		return sockaddr2str(@addr, addr_len, with_port)
+	else
+		return ""
+	end if
+end function
+
+'/ @brief 
+ '
+ ' @param 
+ ' @param 
+ '
+ ' @return 
+ '/
+function MySock_SocketGetPeerAddr (sock as MYSOCK, ip as zstring, ip_len as uinteger, port as ushort ptr) as integer MYSOCK_EXPORT
+	dim as sockaddr_storage addr
+	dim as integer addr_len = sizeof(addr)
+	
+	if getpeername(sock, cast(sockaddr ptr, @addr), @addr_len) = 0 then
+		return sockaddr2ipport(@addr, addr_len, ip, ip_len, port)
+	else
+		return 0
+	end if
+end function
+
+'/ @brief 
+ '
+ ' @param 
+ ' @param 
+ '
+ ' @return 
+ '/
+function MySock_SocketGetPeerAddrStr (sock as MYSOCK, with_port as integer) as string MYSOCK_EXPORT
+	dim as sockaddr_storage addr
+	dim as integer addr_len = sizeof(addr)
+	
+	if getpeername(sock, cast(sockaddr ptr, @addr), @addr_len) = 0 then
+		return sockaddr2str(@addr, addr_len, with_port)
+	else
+		return ""
+	end if
+end function
+
+' ---------------------------------------------------------------------------- '
+
 end extern

@@ -116,14 +116,15 @@ end function
  ' If a host name was passed to MyCln_Create, then this function will make a DNS lookup
  '
  ' @param myCln [in] Client pointer
- ' @param timeout [in] Time out (in seconds) befor return a failed connect attempt
+ ' @param timeout [in] Time out (in seconds) befor returning a failed connect attempt
  '
  ' @return 1 on succes, -1 if timed out, 0 otherwise
  '/
 function MyCln_Connect (myCln as myCln_t ptr, timeout as uinteger) as integer MYSOCK_EXPORT
 	if CLN_CONNECTED(myCln) then return 0
 	' ---
-	dim as addrinfo hints: clear(hints, 0, sizeof(hints))
+	dim as addrinfo hints
+	clear(hints, 0, sizeof(hints))
 	dim as addrinfo ptr list, to_free
 	
 	hints.ai_family = myCln->protocol
@@ -152,7 +153,7 @@ function MyCln_Connect (myCln as myCln_t ptr, timeout as uinteger) as integer MY
 		myCln->sock = socket_(list->ai_family, list->ai_socktype, list->ai_protocol)
 		if myCln->sock = INVALID_SOCKET then goto try_next
 		
-		if ioctlsocket(myCln->sock, FIONBIO, @yes) <> 0 then goto try_next		
+		if ioctlsocket(myCln->sock, FIONBIO, @yes) <> 0 then goto try_next
 		' /// timeout connect /// '
 		if connect(myCln->sock, list->ai_addr, list->ai_addrlen) <> 0 and WSAGetLastError() <> WSAEWOULDBLOCK then goto try_next
 		

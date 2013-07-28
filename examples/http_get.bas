@@ -1,6 +1,6 @@
 #include "mysock.bi"
 
-#define CRLF string(1, 13) + string (1, 10)
+#define CRLF chr(13, 10)
 
 declare sub onRecv (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as uinteger)
 
@@ -17,8 +17,16 @@ if MyCln_Connect(cln, 5) = 0 then print "Connection timed out!": sleep: end
 print "Connected to "; MyCln_GetSrvIpStr(cln, 1)
 
 ' Send HTTP request
-dim as string request = "get / HTTP/1.1" + CRLF + CRLF
+dim as string request = _
+	"GET / HTTP/1.1" + CRLF + _
+	"Host: www.freebasic.net" + CRLF + _
+	"Accept: text/html" + CRLF + _
+	"Connection: Close" + CRLF + _
+	"User-Agent: My-Sock" + CRLF + CRLF
+print "Sending request"
+print request
 MyCln_Send(cln, strptr(request), len(request))
+print
 
 ' Wait for response, with a time out
 dim as double t = timer()

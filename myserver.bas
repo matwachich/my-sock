@@ -777,7 +777,7 @@ end sub
  '
  ' @return Socket ID
  '/
-function MySrv_PeerGetSocket (muSrv as mySrv_t ptr, peer_id as integer) as integer
+function MySrv_PeerGetSocket (mySrv as mySrv_t ptr, peer_id as integer) as integer
 	if not PEER_VALID(mySrv, peer_id) or not PEER_CONNECTED(mySrv, peer_id) then return -1
 	
 	return mySrv->peers[peer_id].sock
