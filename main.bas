@@ -131,12 +131,15 @@ end function
 
 ' ---------------------------------------------------------------------------- '
 
-'/ @brief 
+'/ @brief Get the local address of a connected/bound Socket ID (C-Style)
  '
- ' @param 
- ' @param 
+ ' @param sock [in] Socket ID
+ ' @param ip [out] Buffer that will contain the server's ip
+ ' @param ip_len [in] Size of the buffer (in bytes)
+ ' @param port [out] Pointer to a UShort variable. Will be filled with the listened port number
+ '	Can be 0 if not needed
  '
- ' @return 
+ ' @return 1 on succes, 0 otherwise
  '/
 function MySock_SocketGetAddr (sock as MYSOCK, ip as zstring, ip_len as uinteger, port as ushort ptr) as integer MYSOCK_EXPORT
 	dim as sockaddr_storage addr
@@ -149,12 +152,12 @@ function MySock_SocketGetAddr (sock as MYSOCK, ip as zstring, ip_len as uinteger
 	end if
 end function
 
-'/ @brief 
+'/ @brief Get the local address of a connected/bound Socket ID (FB String)
  '
- ' @param 
- ' @param 
+ ' @param sock [in] Socket ID
+ ' @param with_port [in] Set to non 0 to append port number to the end of the address
  '
- ' @return 
+ ' @return A String containing the listened IP address (IPv4/IPv6) on succes, empty string ("") otherwise
  '/
 function MySock_SocketGetAddrStr (sock as MYSOCK, with_port as integer) as string MYSOCK_EXPORT
 	dim as sockaddr_storage addr
@@ -167,12 +170,15 @@ function MySock_SocketGetAddrStr (sock as MYSOCK, with_port as integer) as strin
 	end if
 end function
 
-'/ @brief 
+'/ @brief Get the remote address of a connected Socket ID (C-Style)
  '
- ' @param 
- ' @param 
+ ' @param sock [in] Socket ID
+ ' @param ip [out] Buffer that will contain the server's ip
+ ' @param ip_len [in] Size of the buffer (in bytes)
+ ' @param port [out] Pointer to a UShort variable. Will be filled with the listened port number
+ '	Can be 0 if not needed
  '
- ' @return 
+ ' @return 1 on succes, 0 otherwise
  '/
 function MySock_SocketGetPeerAddr (sock as MYSOCK, ip as zstring, ip_len as uinteger, port as ushort ptr) as integer MYSOCK_EXPORT
 	dim as sockaddr_storage addr
@@ -185,12 +191,12 @@ function MySock_SocketGetPeerAddr (sock as MYSOCK, ip as zstring, ip_len as uint
 	end if
 end function
 
-'/ @brief 
+'/ @brief Get the remote address of a connected Socket ID (FB String)
  '
- ' @param 
- ' @param 
+ ' @param sock [in] Socket ID
+ ' @param with_port [in] Set to non 0 to append port number to the end of the address
  '
- ' @return 
+ ' @return A String containing the listened IP address (IPv4/IPv6) on succes, empty string ("") otherwise
  '/
 function MySock_SocketGetPeerAddrStr (sock as MYSOCK, with_port as integer) as string MYSOCK_EXPORT
 	dim as sockaddr_storage addr

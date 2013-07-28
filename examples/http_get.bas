@@ -9,7 +9,8 @@ dim shared as byte keep_going = 1
 MySock_Startup()
 
 ' Create a client
-dim as myCln_t ptr cln = MyCln_Create("www.freebasic.net", 80, MYSOCK_PROT_IPV4)
+dim shared cln as myCln_t ptr
+cln = MyCln_Create("www.freebasic.net", 80, MYSOCK_PROT_IPV4)
 MyCln_SetCallbacks(cln, 0, cast(myClnOnRecvProc, @onRecv))
 
 ' Connect
@@ -29,7 +30,9 @@ MyCln_Send(cln, strptr(request), len(request))
 print
 
 ' Wait for response, with a time out
-dim as double t = timer()
+dim shared t as double
+t = timer()
+
 while keep_going = 1
 	MyCln_Process(cln)
 	sleep 100
@@ -48,10 +51,15 @@ sleep
 
 ' ---------------------------------------------------------------------------- '
 
+sub onDisconnect (myCln as myCln_t ptr)
+	' when the server closes the connection, then exit
+	if myCln = cln then keep_going = 0
+end sub
+
 sub onRecv (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as uinteger)
+	' data received, re-init the timer
+	t = timer()
+	' ---
 	print "Received data"
 	print str(*cast(zstring ptr, data_))
-	' ---
-	' Response received, now exit program
-	keep_going = 0
 end sub
