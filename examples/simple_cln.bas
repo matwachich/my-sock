@@ -26,6 +26,9 @@ end if
 print "Connected to "; MyCln_GetSrvIpStr(cln, 1)
 print "Now sending some messages ..."
 
+' Don't forget to send the ending \0 caracter (len(msg) + 1)
+' Because the simple_srv.bas on the other side will simply
+' do cast(zstring ptr, data_)
 dim as zstring * 100 msg
 
 msg = "Hello!"
