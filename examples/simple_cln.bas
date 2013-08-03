@@ -12,15 +12,16 @@ MySock_Startup()
 dim as myCln_t ptr cln = MyCln_Create("localhost", 8080, MYSOCK_PROT_IPV4)
 ' Set it's callbacks
 MyCln_SetCallbacks( _
-	cln, _
-	cast(myClnOnDisconnectProc, @onDisconnect), _
-	cast(myClnOnRecvProc, @onRecv) _
+    cln, _
+    cast(myClnOnDisconnectProc, @onDisconnect), _
+    cast(myClnOnPacketRecvProc, @onRecv), _
+    0, 0 _
 )
 
 ' Connextion attempt, with 5 seconds timeout
 if MyCln_Connect(cln, 5) = 0 then
-	print "Unable to connect"
-	end
+    print "Unable to connect"
+    end
 end if
 
 print "Connected to "; MyCln_GetSrvIpStr(cln, 1)
@@ -64,10 +65,10 @@ sleep
 
 ' Called when a client disconnects
 sub onDisconnect (myCln as myCln_t ptr)
-	print "Disconnected!"
+    print "Disconnected!"
 end sub
 
 ' Called when data is received from the server
 sub onRecv (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as uinteger)
-	' The server will send nothing for this example
+    ' The server will send nothing for this example
 end sub

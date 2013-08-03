@@ -5,7 +5,7 @@ _MySock_Startup()
 ; ---
 
 $pSrv = _MySrv_Create(100, $MYSOCK_PROT_IPV4)
-_MySrv_SetCallbacks($pSrv, "_OnConnect", "_OnDisconnect", "_OnRecv")
+_MySrv_SetCallbacks($pSrv, "_OnConnect", "_OnDisconnect", "_OnRecv", "_OnReceiving", "")
 _MySrv_Start($pSrv, 8080)
 
 ConsoleWrite("Server listening: " & _MySrv_GetAddrStr($pSrv, 1) & @CRLF)
@@ -43,4 +43,8 @@ Func _OnRecv($pSrv, $iPeerId, $bData)
 		Case "Bye!"
 			_MySrv_PeerSend($pSrv, $iPeerId, StringToBinary("Bye!"))
 	EndSwitch
+EndFunc
+
+Func _OnReceiving($pSrv, $iPeerId, $iReceived, $iTotal)
+	ConsoleWrite("Receiving ...	[" & $iPeerId & "] " & $iReceived & " / " & $iTotal & @CRLF)
 EndFunc

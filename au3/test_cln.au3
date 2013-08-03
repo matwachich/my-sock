@@ -4,11 +4,12 @@
 _MySock_Startup()
 
 $pCln = _MyCln_Create("localhost", 8080, $MYSOCK_PROT_IPV4)
-_MyCln_SetCallbacks($pCln, "_OnDisconnect", "_OnRecv")
+_MyCln_SetCallbacks($pCln, "_OnDisconnect", "_OnRecv", "_OnReceiving", "")
 
 If Not _MyCln_Connect($pCln, 5) Then Exit -1
 ConsoleWrite("+ Connected to: " & _MyCln_GetHostStr($pCln, 1) & " -> " & _MyCln_GetSrvIp($pCln) & @CRLF)
 
+_MyCln_Send($pCln, StringToBinary("Hi! Ceci est un long message, pour voir un peut est-ce que le système est capable de séparer les différents messages (packets) envoyés."))
 _MyCln_Send($pCln, StringToBinary("Salut!"))
 
 Global $iRun = 1
@@ -36,4 +37,8 @@ Func _OnRecv($pCln, $bData)
 		Case "Bye!"
 			$iRun = 0
 	EndSwitch
+EndFunc
+
+Func _OnReceiving($pCln, $iReceived, $iTotal)
+	ConsoleWrite("Receiving ...	" & $iReceived & " / " & $iTotal & @CRLF)
 EndFunc

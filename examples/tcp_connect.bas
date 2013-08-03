@@ -18,12 +18,12 @@ print "Waiting for data ..."
 dim as integer ret
 dim as zstring * 256 buff
 do
-	ret = MyTcp_Recv(sock, @buff, 256)
-	if ret = -1 then exit do
-	
-	if ret > 0 then
-		print buff
-	end if
+    ret = MyTcp_Recv(sock, @buff, 256)
+    if ret = -1 then exit do
+    
+    if ret > 0 then
+        print buff
+    end if
 loop
 
 MyTcp_CloseSocket(sock)
