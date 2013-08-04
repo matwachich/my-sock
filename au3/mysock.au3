@@ -405,14 +405,14 @@ Func _MySrv_GetUserData($pMySrv)
 EndFunc
 
 
-;~ declare sub 			MySrv_SetCallbacks	(mySrv as mySrv_t ptr, onConnect as mySrvOnConnectProc, onDisconnect as mySrvOnDisconnectProc, onRecv as mySrvOnRecvProc, onReceiving as mySrvOnReceivingProc, onTimeOut as mySrvOnTimeOutProc)
-Func _MySrv_SetCallbacks($pMySrv, $sOnConnect, $sOnDisconnect, $sOnRecv, $sOnReceiving, $sOnTimeOut)
+;~ declare sub 			MySrv_SetCallbacks	(mySrv as mySrv_t ptr, onConnect as mySrvOnConnectProc, onDisconnect as mySrvOnDisconnectProc, onPacketRecv as mySrvOnRecvProc, onReceiving as mySrvOnReceivingProc, onTimeOut as mySrvOnTimeOutProc)
+Func _MySrv_SetCallbacks($pMySrv, $sOnConnect, $sOnDisconnect, $sOnPacketRecv, $sOnReceiving, $sOnTimeOut)
 	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
 	; ---
 	Local $ret = DllCall($__gMySock_hDll, "none:cdecl", "MySrv_SetCallbacks", "ptr", $pMySrv, _
 		"ptr", __MySock_SetCallback($sOnConnect, $MYSOCK_CB_SRV_ONCONNECT), _
 		"ptr", __MySock_SetCallback($sOnDisconnect, $MYSOCK_CB_SRV_ONDISCONNECT), _
-		"ptr", __MySock_SetCallback($sOnRecv, $MYSOCK_CB_SRV_ONPACKETRECV), _
+		"ptr", __MySock_SetCallback($sOnPacketRecv, $MYSOCK_CB_SRV_ONPACKETRECV), _
 		"ptr", __MySock_SetCallback($sOnReceiving, $MYSOCK_CB_SRV_ONRECEIVING), _
 		"ptr", __MySock_SetCallback($sOnTimeOut, $MYSOCK_CB_SRV_ONTIMEOUT) _
 	)
@@ -846,13 +846,13 @@ Func _MyCln_GetSrvIp($pMyCln)
 EndFunc
 
 
-;~ declare sub 			MyCln_SetCallbacks	(myCln as myCln_t ptr, onDisconnect as myClnOnDisconnectProc, onRecv as myClnOnRecvProc, onReceiving as myClnOnReceivingProc, onTimeOut as myClnOnTimeOutProc)
-Func _MyCln_SetCallbacks($pMyCln, $sOnDisconnect, $sOnRecv, $sOnReceiving, $sOnTimeOut)
+;~ declare sub 			MyCln_SetCallbacks	(myCln as myCln_t ptr, onDisconnect as myClnOnDisconnectProc, onPacketRecv as myClnOnRecvProc, onReceiving as myClnOnReceivingProc, onTimeOut as myClnOnTimeOutProc)
+Func _MyCln_SetCallbacks($pMyCln, $sOnDisconnect, $sOnPacketRecv, $sOnReceiving, $sOnTimeOut)
 	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
 	; ---
 	DllCall($__gMySock_hDll, "none:cdecl", "MyCln_SetCallbacks", "ptr", $pMyCln, _
 		"ptr", __MySock_SetCallback($sOnDisconnect, $MYSOCK_CB_CLN_ONDISCONNECT), _
-		"ptr", __MySock_SetCallback($sOnRecv, $MYSOCK_CB_CLN_ONPACKETRECV), _
+		"ptr", __MySock_SetCallback($sOnPacketRecv, $MYSOCK_CB_CLN_ONPACKETRECV), _
 		"ptr", __MySock_SetCallback($sOnReceiving, $MYSOCK_CB_CLN_ONRECEIVING), _
 		"ptr", __MySock_SetCallback($sOnTimeOut, $MYSOCK_CB_CLN_ONTIMEOUT) _
 	)
