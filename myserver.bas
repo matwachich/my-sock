@@ -459,6 +459,32 @@ function MySrv_GetUserData (mySrv as mySrv_t ptr) as any ptr MYSOCK_EXPORT
     return mySrv->user_data
 end function
 
+'/ @brief Set one callback function for a Server
+ '
+ ' @param mySrv [in] Server pointer
+ ' @param callback [in] Which callback to set
+ '  MYSOCK_CB_CONNECT       Set the onConnect callback (mySrvOnConnectProc)
+ '  MYSOCK_CB_DISCONNECT    Set the onDisconnect callback (mySrvOnDisconnectProc)
+ '  MYSOCK_CB_PACKETRECV    Set the onPacketRecv callback (mySrvOnPacketRecvProc)
+ '  MYSOCK_CB_RECEIVING     Set the onReceiving callback (mySrvOnReceivingProc)
+ '  MYSOCK_CB_TIMEOUT       Set the onTimeOut callback (mySrvOnTimeOutProc)
+ ' @param proc [in] Callback function pointer
+ '/
+sub MySrv_SetCallback (mySrv as mySrv_t ptr, callback as callback_e, proc as any ptr)
+    select case callback
+        case MYSOCK_CB_CONNECT
+            mySrv->onConnect = proc
+        case MYSOCK_CB_DISCONNECT
+            mySrv->onDisconnect = proc
+        case MYSOCK_CB_PACKETRECV
+            mySrv->onPacketRecv = proc
+        case MYSOCK_CB_RECEIVING
+            mySrv->onReceiving = proc
+        case MYSOCK_CB_TIMEOUT 
+            mySrv->onTimeOut = proc
+    end select
+end sub
+
 '/ @brief Set callback functions for a server
  '
  ' @param mySrv [in] Server pointer

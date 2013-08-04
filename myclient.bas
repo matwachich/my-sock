@@ -44,6 +44,8 @@ type _myCln_t
     as MYSIZE recv_buff_ofset
     'as MYSIZE packet_len
     'as MYSIZE total_recv
+    
+    'as byte is_stream
     as byte is_receiving
     
     as double recv_timer
@@ -94,6 +96,8 @@ function MyCln_Create (host as zstring, port as ushort, protocol as protocol_e) 
     myCln->recv_buff = 0	' allocated on succesfull connect
     myCln->recv_buff_len = 0
     myCln->recv_buff_ofset = 0
+    ' ---
+    'myCln->is_stream = 0
     myCln->is_receiving = 0
     ' ---
     myCln->recv_timeout = MYSOCK_DEF_RECV_TIMEOUT
@@ -353,6 +357,29 @@ function MyCln_GetSrvIpStr (myCln as myCln_t ptr, with_port as integer) as strin
     end if
     return s
 end function
+
+'/ @brief Set one callback function for a TCP Client
+ '
+ ' @param myCln [in] Client pointer
+ ' @param callback [in] Which callback to set
+ '  MYSOCK_CB_DISCONNECT    Set the onDisconnect callback (myClnOnDisconnectProc)
+ '  MYSOCK_CB_PACKETRECV    Set the onPacketRecv callback (myClnOnPacketRecvProc)
+ '  MYSOCK_CB_RECEIVING     Set the onReceiving callback (myClnOnReceivingProc)
+ '  MYSOCK_CB_TIMEOUT       Set the onTimeOut callback (myClnOnTimeOutProc)
+ ' @param proc [in] Callback function pointer
+ '/
+sub MyCln_SetCallback (myCln as myCln_t ptr, callback as callback_e, proc as any ptr)
+    select case callback
+        case MYSOCK_CB_DISCONNECT
+            myCln->onDisconnect = proc
+        case MYSOCK_CB_PACKETRECV
+            myCln->onPacketRecv = proc
+        case MYSOCK_CB_RECEIVING
+            myCln->onReceiving = proc
+        case MYSOCK_CB_TIMEOUT 
+            myCln->onTimeOut = proc
+    end select
+end sub
 
 '/ @brief Set TCP Client's callbacks
  '

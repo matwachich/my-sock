@@ -13,6 +13,15 @@ enum protocol_e
     MYSOCK_PROT_IPV6 ' AF_INET6
 end enum
 
+enum callback_e
+    MYSOCK_CB_CONNECT
+    MYSOCK_CB_DISCONNECT
+    'MYSOCK_CB_DATARECV
+    MYSOCK_CB_PACKETRECV
+    MYSOCK_CB_RECEIVING
+    MYSOCK_CB_TIMEOUT
+end enum
+
 ' ---
 ' Type definitions
 type MYSOCK as integer
@@ -23,7 +32,7 @@ type myCln_t as _myCln_t
 
 type mySrvOnConnectProc as sub 		(mySrv as mySrv_t ptr, peer_id as integer)
 type mySrvOnDisconnectProc as sub 	(mySrv as mySrv_t ptr, peer_id as integer)
-type mySrvOnDataRecvProc as sub     (mySrv as mySrv_t ptr, peer_id as integer, data_ as ubyte ptr, data_len as MYSIZE, total_len as MYSIZE)
+'type mySrvOnDataRecvProc as sub     (mySrv as mySrv_t ptr, peer_id as integer, data_ as ubyte ptr, data_len as MYSIZE, total_len as MYSIZE, is_end as integer)
 type mySrvOnPacketRecvProc as sub 	(mySrv as mySrv_t ptr, peer_id as integer, data_ as ubyte ptr, data_len as MYSIZE)
 type mySrvOnReceivingProc as sub 	(mySrv as mySrv_t ptr, peer_id as integer, received_bytes as MYSIZE, total_bytes as MYSIZE)
 type mySrvOnTimeOutProc as sub      (mySrv as mySrv_t ptr, peer_id as integer, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
@@ -31,7 +40,7 @@ type mySrvOnTimeOutProc as sub      (mySrv as mySrv_t ptr, peer_id as integer, p
 type mySrvIterateProc as function 	(mySrv as mySrv_t ptr, peer_id as integer, user_data as any ptr) as integer
 
 type myClnOnDisconnectProc as sub 	(myCln as myCln_t ptr)
-type myClnOnDataRecvProc as sub     (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as MYSIZE, total_len as MYSIZE)
+'type myClnOnDataRecvProc as sub     (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as MYSIZE, total_len as MYSIZE, is_end as integer)
 type myClnOnPacketRecvProc as sub 	(myCln as myCln_t ptr, data_ as ubyte ptr, data_len as MYSIZE)
 type myClnOnReceivingProc as sub 	(myCln as myCln_t ptr, received_bytes as MYSIZE, total_bytes as MYSIZE)
 type myClnOnTimeOutProc as sub      (myCln as myCln_t ptr, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
@@ -87,6 +96,7 @@ declare function	MySrv_GetSocket			(mySrv as mySrv_t ptr) as integer
 declare sub 		MySrv_SetUserData		(mySrv as mySrv_t ptr, user_data as any ptr)
 declare function	MySrv_GetUserData		(mySrv as mySrv_t ptr) as any ptr
 
+declare sub         MySrv_SetCallback       (mySrv as mySrv_t ptr, callback as callback_e, proc as any ptr)
 declare sub 		MySrv_SetCallbacks		(mySrv as mySrv_t ptr, onConnect as mySrvOnConnectProc, onDisconnect as mySrvOnDisconnectProc, onRecv as mySrvOnPacketRecvProc, onReceiving as mySrvOnReceivingProc, onTimeOut as mySrvOnTimeOutProc)
 declare sub 		MySrv_Process			(mySrv as mySrv_t ptr)
 
@@ -129,6 +139,7 @@ declare function 	MyCln_GetHostStr	(myCln as myCln_t ptr, with_port as integer) 
 declare sub 		MyCln_GetSrvIp		(myCln as myCln_t ptr, ip as zstring, ip_len as MYSIZE, port as ushort ptr)
 declare function 	MyCln_GetSrvIpStr	(myCln as myCln_t ptr, with_port as integer) as string
 
+declare sub         MyCln_SetCallback   (myCln as myCln_t ptr, callback as callback_e, proc as any ptr)
 declare sub 		MyCln_SetCallbacks	(myCln as myCln_t ptr, onDisconnect as myClnOnDisconnectProc, onRecv as myClnOnPacketRecvProc, onReceiving as myClnOnReceivingProc, onTimeOut as myClnOnTimeOutProc)
 declare sub 		MyCln_Process		(myCln as myCln_t ptr)
 
