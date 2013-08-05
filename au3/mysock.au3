@@ -13,15 +13,17 @@
 ; - Every object created MUST be destroyed to avoir memory leak (_MySrv_Destroy, _MyCln_Destroy)
 ; - Callbacks definition:
 ;	mySrvOnConnectProc		=> _Func($pMySrv, $iPeerId)
-;	mySrvOnDisconnectProc	=> _Func($pMySrv, $iPeerId)
+;	mySrvOnDisconnectProc(*)=> _Func($pMySrv, $iPeerId, $bPartialData, $iExceptedLen)
 ;	mySrvOnPacketRecvProc	=> _Func($pMySrv, $iPeerId, $bData)
 ;	mySrvOnReceiving		=> _Func($pMySrv, $iPeerId, $iReceivedBytes, $iTotalBytes)
 ;	mySrvOnTimeOutProc		=> _Func($pMySrv, $iPeerId, $bPartialData, $iExceptedLen)
 ;	mySrvIterateProc		=> _Func($pMySrv, $iPeerId, $pUserData) -> Return 0 to stope iterating, any other value will continue
-;	myClnOnDisconnectProc	=> _Func($pMyCln)
+;	myClnOnDisconnectProc(*)=> _Func($pMyCln, $bPartialData, $iExceptedLen)
 ;	myClnOnPacketRecvProc	=> _Func($pMyCln, $bData)
 ;	myClnOnReceivingProc	=> _Func($pMyCln, $iReceivedBytes, $iTotalBytes)
 ;	myClnOnTimeOutProc		=> _Func($pMyCln, $bPartialData, $iExceptedLen)
+;
+;	(*) If there was partial packet data when disconnecting, it is passed to this callback, otherwise $bPartialData and $iExceptedLen = 0
 ; ===============================================================================================================================
 
 ; #CURRENT# =====================================================================================================================
@@ -107,18 +109,18 @@ Enum _
 
 Global $__gMySock_aCallbacks[9][3] = [ _
 	[0, "none:cdecl", "ptr;int"], _					; mySrvOnConnectProc
-	[0, "none:cdecl", "ptr;int"], _					; mySrvOnDisconnectProc
+	[0, "none:cdecl", "ptr;int;ptr;uint;uint"], _	; mySrvOnDisconnectProc
 	[0, "none:cdecl", "ptr;int;ptr;uint"], _		; mySrvOnPacketRecvProc
 	[0, "none:cdecl", "ptr;int;uint;uint"], _		; mySrvOnReceivingProc
 	[0, "none:cdecl", "ptr;int;ptr;uint;uint"], _	; mySrvOnTimeOutProc
-	[0, "none:cdecl", "ptr"], _						; myClnOnDisconnectProc
+	[0, "none:cdecl", "ptr;ptr;uint;uint"], _		; myClnOnDisconnectProc
 	[0, "none:cdecl", "ptr;ptr;uint"], _			; myClnOnPacketRecvProc
 	[0, "none:cdecl", "ptr;uint;uint"], _			; myClnOnReceivingProc
 	[0, "none:cdecl", "ptr;ptr;uint;uint"]]			; myClnOnTimeOutProc
 
-; On recv special callbacks
-Global $__gMySock_sSrvOnPacketRecv = "", $__gMySock_sSrvOnTimeOut = ""
-Global $__gMySock_sClnOnPacketRecv = "", $__gMySock_sClnOnTimeOut = ""
+; Special callbacks
+Global $__gMySock_sSrvOnDisconnect = "", $__gMySock_sSrvOnPacketRecv = "", $__gMySock_sSrvOnTimeOut = ""
+Global $__gMySock_sClnOnDisconnect = "", $__gMySock_sClnOnPacketRecv = "", $__gMySock_sClnOnTimeOut = ""
 
 ; ===============================================================================================================================
 
@@ -410,11 +412,11 @@ Func _MySrv_SetCallbacks($pMySrv, $sOnConnect, $sOnDisconnect, $sOnPacketRecv, $
 	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
 	; ---
 	Local $ret = DllCall($__gMySock_hDll, "none:cdecl", "MySrv_SetCallbacks", "ptr", $pMySrv, _
-		"ptr", __MySock_SetCallback($sOnConnect, $MYSOCK_CB_SRV_ONCONNECT), _
-		"ptr", __MySock_SetCallback($sOnDisconnect, $MYSOCK_CB_SRV_ONDISCONNECT), _
-		"ptr", __MySock_SetCallback($sOnPacketRecv, $MYSOCK_CB_SRV_ONPACKETRECV), _
-		"ptr", __MySock_SetCallback($sOnReceiving, $MYSOCK_CB_SRV_ONRECEIVING), _
-		"ptr", __MySock_SetCallback($sOnTimeOut, $MYSOCK_CB_SRV_ONTIMEOUT) _
+		"ptr", __MySock_SetCallback($sOnConnect,	$MYSOCK_CB_SRV_ONCONNECT), _
+		"ptr", __MySock_SetCallback($sOnDisconnect,	$MYSOCK_CB_SRV_ONDISCONNECT), _
+		"ptr", __MySock_SetCallback($sOnPacketRecv,	$MYSOCK_CB_SRV_ONPACKETRECV), _
+		"ptr", __MySock_SetCallback($sOnReceiving,	$MYSOCK_CB_SRV_ONRECEIVING), _
+		"ptr", __MySock_SetCallback($sOnTimeOut,	$MYSOCK_CB_SRV_ONTIMEOUT) _
 	)
 	If @error Then
 		Local $err = @error
@@ -448,7 +450,7 @@ Func _MySrv_PeerSend($pMySrv, $iPeerId, $bData)
 	Local $struct = DllStructCreate("byte[" & $len & "]")
 	DllStructSetData($struct, 1, $bData)
 	; ---
-	Local $ret = DllCall($__gMySock_hDll, "none:cdecl", "MySrv_PeerSend", "ptr", $pMySrv, "int", $iPeerId, "ptr", DllStructGetPtr($struct, 1), "uint", $len)
+	Local $ret = DllCall($__gMySock_hDll, "int:cdecl", "MySrv_PeerSend", "ptr", $pMySrv, "int", $iPeerId, "ptr", DllStructGetPtr($struct, 1), "uint", $len)
 	If @error Then
 		Local $err = @error
 		If Not @Compiled Then ConsoleWrite("! DllCall error " & $err & " (MySrv_PeerSend)" & @CRLF)
@@ -851,10 +853,10 @@ Func _MyCln_SetCallbacks($pMyCln, $sOnDisconnect, $sOnPacketRecv, $sOnReceiving,
 	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
 	; ---
 	DllCall($__gMySock_hDll, "none:cdecl", "MyCln_SetCallbacks", "ptr", $pMyCln, _
-		"ptr", __MySock_SetCallback($sOnDisconnect, $MYSOCK_CB_CLN_ONDISCONNECT), _
-		"ptr", __MySock_SetCallback($sOnPacketRecv, $MYSOCK_CB_CLN_ONPACKETRECV), _
-		"ptr", __MySock_SetCallback($sOnReceiving, $MYSOCK_CB_CLN_ONRECEIVING), _
-		"ptr", __MySock_SetCallback($sOnTimeOut, $MYSOCK_CB_CLN_ONTIMEOUT) _
+		"ptr", __MySock_SetCallback($sOnDisconnect,	$MYSOCK_CB_CLN_ONDISCONNECT), _
+		"ptr", __MySock_SetCallback($sOnPacketRecv,	$MYSOCK_CB_CLN_ONPACKETRECV), _
+		"ptr", __MySock_SetCallback($sOnReceiving,	$MYSOCK_CB_CLN_ONRECEIVING), _
+		"ptr", __MySock_SetCallback($sOnTimeOut,	$MYSOCK_CB_CLN_ONTIMEOUT) _
 	)
 	If @error Then
 		Local $err = @error
@@ -978,30 +980,42 @@ Func __MySock_SetCallback($sFunc, $iCbId)
 	; ---
 	If $sFunc Then
 		Switch $iCbId
+			Case $MYSOCK_CB_SRV_ONDISCONNECT
+				$__gMySock_sSrvOnDisconnect = $sFunc
+				$sFunc = "__MySock_SpecCB_SrvOnDisconnect"
+			; ---
 			Case $MYSOCK_CB_SRV_ONPACKETRECV
 				$__gMySock_sSrvOnPacketRecv = $sFunc
-				$sFunc = "__MySock_SpecCb_SrvOnRecv"
+				$sFunc = "__MySock_SpecCB_SrvOnPacketRecv"
 			; ---
 			Case $MYSOCK_CB_SRV_ONTIMEOUT
 				$__gMySock_sSrvOnTimeOut = $sFunc
-				$sFunc = "__MySock_SpecCb_SrvOnTimeOut"
+				$sFunc = "__MySock_SpecCB_SrvOnTimeOut"
+			; ---
+			Case $MYSOCK_CB_CLN_ONDISCONNECT
+				$__gMySock_sClnOnDisconnect = $sFunc
+				$sFunc = "__MySock_SpecCB_ClnOnDisconnect"
 			; ---
 			Case $MYSOCK_CB_CLN_ONPACKETRECV
 				$__gMySock_sClnOnPacketRecv = $sFunc
-				$sFunc = "__MySock_SpecCb_ClnOnRecv"
+				$sFunc = "__MySock_SpecCB_ClnOnPacketRecv"
 			; ---
 			Case $MYSOCK_CB_CLN_ONTIMEOUT
 				$__gMySock_sClnOnTimeOut = $sFunc
-				$sFunc = "__MySock_SpecCb_ClnOnTimeOut"
+				$sFunc = "__MySock_SpecCB_ClnOnTimeOut"
 		EndSwitch
 		; ---
 		$__gMySock_aCallbacks[$iCbId][0] = DllCallbackRegister($sFunc, $__gMySock_aCallbacks[$iCbId][1], $__gMySock_aCallbacks[$iCbId][2])
 	Else
 		Switch $iCbId
+			Case $MYSOCK_CB_SRV_ONDISCONNECT
+				$__gMySock_sSrvOnDisconnect = ""
 			Case $MYSOCK_CB_SRV_ONPACKETRECV
 				$__gMySock_sSrvOnPacketRecv = ""
 			Case $MYSOCK_CB_SRV_ONTIMEOUT
 				$__gMySock_sSrvOnTimeOut = ""
+			Case $MYSOCK_CB_CLN_ONDISCONNECT
+				$__gMySock_sClnOnDisconnect = ""
 			Case $MYSOCK_CB_CLN_ONPACKETRECV
 				$__gMySock_sClnOnPacketRecv = ""
 			Case $MYSOCK_CB_CLN_ONTIMEOUT
@@ -1018,22 +1032,40 @@ Func __MySock_FreeCallbacks()
 	Next
 EndFunc
 
-Func __MySock_SpecCb_SrvOnRecv($pMySrv, $iPeerId, $pData, $iDataLen)
+
+Func __MySock_SpecCB_SrvOnDisconnect($pMySrv, $iPeerId, $pPartialData, $iDataLen, $iExceptedLen)
+;~ 	ConsoleWrite("__MySock_SpecCB_SrvOnDisconnect(" & $pMySrv & ", " & $iPeerId & ", " & $pPartialData & ", " & $iDataLen & ", " & $iExceptedLen & ")" & @CRLF)
+	Local $struct = DllStructCreate("byte[" & $iDataLen & "]", $pPartialData)
+	Call($__gMySock_sSrvOnDisconnect, $pMySrv, $iPeerId, DllStructGetData($struct, 1), $iExceptedLen)
+EndFunc
+
+Func __MySock_SpecCB_SrvOnPacketRecv($pMySrv, $iPeerId, $pData, $iDataLen)
+;~ 	ConsoleWrite("__MySock_SpecCB_SrvOnPacketRecv(" & $pMySrv & ", " & $iPeerId & ", " & $pData & ", " & $iDataLen & ")" & @CRLF)
 	Local $struct = DllStructCreate("byte[" & $iDataLen & "]", $pData)
 	Call($__gMySock_sSrvOnPacketRecv, $pMySrv, $iPeerId, DllStructGetData($struct, 1))
 EndFunc
 
-Func __MySock_SpecCb_SrvOnTimeOut($pMySrv, $iPeerId, $pPartialData, $iDataLen, $iExceptedLen)
+Func __MySock_SpecCB_SrvOnTimeOut($pMySrv, $iPeerId, $pPartialData, $iDataLen, $iExceptedLen)
+;~ 	ConsoleWrite("__MySock_SpecCB_SrvOnTimeOut(" & $pMySrv & ", " & $iPeerId & ", " & $pPartialData & ", " & $iDataLen & ", " & $iExceptedLen & ")" & @CRLF)
 	Local $struct = DllStructCreate("byte[" & $iDataLen & "]", $pPartialData)
 	Call($__gMySock_sSrvOnTimeOut, $pMySrv, $iPeerId, DllStructGetData($struct, 1), $iExceptedLen)
 EndFunc
 
-Func __MySock_SpecCb_ClnOnRecv($pMyCln, $pData, $iDataLen)
+
+Func __MySock_SpecCB_ClnOnDisconnect($pMyCln, $pPartialData, $iDataLen, $iExceptedLen)
+;~ 	ConsoleWrite("__MySock_SpecCB_ClnOnDisconnect(" & $pMyCln & ", " & $pPartialData & ", " & $iDataLen & ", " & $iExceptedLen & ")" & @CRLF)
+	Local $struct = DllStructCreate("byte[" & $iDataLen & "]", $pPartialData)
+	Call($__gMySock_sClnOnDisconnect, $pMyCln, DllStructGetData($struct, 1), $iExceptedLen)
+EndFunc
+
+Func __MySock_SpecCB_ClnOnPacketRecv($pMyCln, $pData, $iDataLen)
+;~ 	ConsoleWrite("__MySock_SpecCB_ClnOnPacketRecv(" & $pMyCln & ", " & $pData & ", " & $iDataLen & ")" & @CRLF)
 	Local $struct = DllStructCreate("byte[" & $iDataLen & "]", $pData)
 	Call($__gMySock_sClnOnPacketRecv, $pMyCln, DllStructGetData($struct, 1))
 EndFunc
 
-Func __MySock_SpecCb_ClnOnTimeOut($pMyCln, $pPartialData, $iDataLen, $iExceptedLen)
+Func __MySock_SpecCB_ClnOnTimeOut($pMyCln, $pPartialData, $iDataLen, $iExceptedLen)
+;~ 	ConsoleWrite("__MySock_SpecCB_ClnOnTimeOut(" & $pMyCln & ", " & $pPartialData & ", " & $iDataLen & ", " & $iExceptedLen & ")" & @CRLF)
 	Local $struct = DllStructCreate("byte[" & $iDataLen & "]", $pPartialData)
 	Call($__gMySock_sClnOnTimeOut, $pMyCln, DllStructGetData($struct, 1), $iExceptedLen)
 EndFunc

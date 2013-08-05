@@ -9,9 +9,6 @@
 ' default receive timeout
 #define MYSOCK_DEF_RECV_TIMEOUT 60 ' seconds
 
-'/' DisconnectEx(sock, 0, 0, 0): '/
-#define __closesocket(sock) closesocket(sock)
-
 ' ---------------------------------------------------------------------------- '
 
 declare function sockaddr2ipport (addr as sockaddr_storage ptr, addr_len as integer, ip as zstring, ip_len as uinteger, port as ushort ptr) as integer

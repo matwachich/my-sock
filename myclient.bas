@@ -196,7 +196,7 @@ function MyCln_Connect (myCln as myCln_t ptr, timeout as uinteger) as integer MY
         exit do
         
         try_next:
-        if myCln->sock <> INVALID_SOCKET then __closesocket(myCln->sock)
+        if myCln->sock <> INVALID_SOCKET then closesocket(myCln->sock)
         myCln->sock = INVALID_SOCKET
         ' ---
         list = list->ai_next
@@ -229,13 +229,8 @@ end function
 function MyCln_Close (myCln as myCln_t ptr) as integer MYSOCK_EXPORT
     if not CLN_CONNECTED(myCln) then return 0
     
-    __closesocket(myCln->sock)
+    shutdown(myCln->sock, 1)
     MyCln_Process(myCln)
-    
-    if myCln->recv_buff <> 0 then deallocate(myCln->recv_buff)
-    myCln->recv_buff = 0
-    
-    myCln->ip = ""
     
     return 1
 end function
@@ -385,7 +380,7 @@ end sub
  '
  ' @param myCln [in] Client pointer
  ' @param onDisconnect [in] Pointer to a myClnOnDisconnectProc
- '	sub (myCln as myCln_t ptr)
+ '	sub (myCln as myCln_t ptr, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
  ' @param onPacketRecv [in] Pointer to a myClnOnPacketRecvProc
  '	sub (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as MYSIZE)
  ' @param onReceiving [in] Pointer to a myClnOnReceivingProc
@@ -469,20 +464,27 @@ sub MyCln_Process (myCln as myCln_t ptr) MYSOCK_EXPORT
         ' ---
         if myCln->onTimeOut <> 0 then
             myCln->onTimeOut(myCln, myCln->recv_buff, myCln->recv_buff_ofset, myCln->recv_buff_len)
+            myCln->is_receiving = 0 ' so there will be no partial data passed to onDisconnect
         end if
         ' ---
         disconnect = 1
     end if
     ' ---
     if disconnect then
-        if myCln->onDisconnect then myCln->onDisconnect(myCln)
+        if myCln->onDisconnect then
+            if myCln->is_receiving then
+                myCln->onDisconnect(myCln, myCln->recv_buff, myCln->recv_buff_ofset, myCln->recv_buff_len)
+            else
+                myCln->onDisconnect(myCln, 0, 0, 0)
+            end if
+        end if
         ' ---
-        __closesocket(myCln->sock)
+        closesocket(myCln->sock)
         myCln->sock = INVALID_SOCKET
         ' ---
-        if myCln->recv_buff <> 0 then deallocate(myCln->recv_buff)
-        myCln->recv_buff = 0
-        myCln->recv_buff_len = 0
+        if myCln->recv_buff <> 0 then deallocate(myCln->recv_buff): myCln->recv_buff = 0
+        ' ---
+        myCln->ip = ""
     end if
 end sub
 

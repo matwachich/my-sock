@@ -54,7 +54,7 @@ end function
 function	MyTcp_CloseSocket	(sock as MYSOCK) as integer MYSOCK_EXPORT
     if not MYSOCK_ISVALID(sock) then return 0
     ' ---
-    __closesocket(sock)
+    closesocket(sock)
     return 1
 end function
 
@@ -124,7 +124,7 @@ function	MyTcp_Connect		(host as zstring, port as ushort, protocol as protocol_e
         exit do
         
         try_next:
-        if sock <> INVALID_SOCKET then __closesocket(sock)
+        if sock <> INVALID_SOCKET then closesocket(sock)
         sock = INVALID_SOCKET
         ' ---
         list = list->ai_next
@@ -196,7 +196,7 @@ function	MyTcp_Listen		(port as ushort, protocol as protocol_e, max_conn as uint
         exit do ' success
         
         try_next:
-        if sock <> INVALID_SOCKET then __closesocket(sock)
+        if sock <> INVALID_SOCKET then closesocket(sock)
         sock = INVALID_SOCKET
         ' ---
         list = list->ai_next

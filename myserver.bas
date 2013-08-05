@@ -29,7 +29,7 @@
     dim as integer count = 0
     for i as integer = 0 to srv->peers_max - 1
         if PEER_CONNECTED(srv, i) then
-            __closesocket(srv->peers[i].sock)
+            shutdown(srv->peers[i].sock, 1)
             count += 1
             if count >= srv->peers_count then exit for
         end if
@@ -250,7 +250,7 @@ function MySrv_Start (mySrv as mySrv_t ptr, port as ushort) as integer MYSOCK_EX
         exit do ' success
         
         try_next:
-        if mySrv->sock <> INVALID_SOCKET then __closesocket(mySrv->sock)
+        if mySrv->sock <> INVALID_SOCKET then closesocket(mySrv->sock)
         mySrv->sock = INVALID_SOCKET
         ' ---
         list = list->ai_next
@@ -265,7 +265,8 @@ function MySrv_Start (mySrv as mySrv_t ptr, port as ushort) as integer MYSOCK_EX
     ' ---
     mySrv->peers_count = 0
     for i as integer = 0 to mySrv->peers_max - 1
-        PEER_RESET(mySrv, i)
+        mySrv->peers[i].sock = INVALID_SOCKET
+        'PEER_RESET(mySrv, i) ' No need to reset the entire peer structure, this will be done when a peer connects
     next
     ' ---
     #ifdef MYSOCK_DEBUG
@@ -286,10 +287,11 @@ function MySrv_Stop (mySrv as mySrv_t ptr) as integer MYSOCK_EXPORT
     ' close all peers
     SRV_CLOSE_ALL(mySrv)
     ' ---
-    __closesocket(mySrv->sock)
-    mySrv->sock = INVALID_SOCKET
-    ' ---
+    shutdown(mySrv->sock, 1)
     MySrv_Process(mySrv) ' to call disconnect callback
+    ' ---
+    closesocket(mySrv->sock)
+    mySrv->sock = INVALID_SOCKET
     ' ---
     #ifdef MYSOCK_DEBUG
     print "> Server stoped @" ; mySrv
@@ -491,7 +493,7 @@ end sub
  ' @param onConnect [in] Pointer to a mySrvOnConnectProc
  '	sub (mySrv as mySrv_t ptr, peer_id as integer)
  ' @param onDisconnect [in] Pointer to a mySrvOnDisconnectProc
- '	sub (mySrv as mySrv_t ptr, peer_id as integer)
+ '	sub (mySrv as mySrv_t ptr, peer_id as integer, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
  ' @param onPacketRecv [in] Pointer to a mySrvOnPacketRecvProc
  '	sub (mySrv as mySrv_t ptr, peer_id as integer, data_ as ubyte ptr, data_len as MYSIZE)
  ' @param onReceiving [in] Pointer to a mySrvOnReceivingProc
@@ -540,8 +542,8 @@ sub MySrv_Process (mySrv as mySrv_t ptr) MYSOCK_EXPORT
                 ' ---
                 ' init new peer
                 mySrv->peers[free_slot].sock = new_sock
-                mysrv->peers[free_slot].addr = new_addr
-                mySrv->peers[free_slot].addr_len = new_addr_len
+                mysrv->peers[free_slot].addr = new_addr ' store it (rather than call getpeername) to be able to retreive
+                mySrv->peers[free_slot].addr_len = new_addr_len ' peer's address when it's disconnected (in the onDisconnect callback)
                 mySrv->peers[free_slot].recv_buff = callocate(1, sizeof(ulong))
                 mySrv->peers[free_slot].recv_buff_len = sizeof(ulong)
                 mySrv->peers[free_slot].recv_buff_ofset = 0
@@ -557,7 +559,8 @@ sub MySrv_Process (mySrv as mySrv_t ptr) MYSOCK_EXPORT
                 if mySrv->onConnect <> NULL then mySrv->onConnect(mySrv, free_slot)
             else
                 ' sorry new_sock, server is full! :p
-                __closesocket(new_sock)
+                shutdown(new_sock, 2)
+                closesocket(new_sock)
             end if
         end if
     end if
@@ -624,17 +627,26 @@ sub MySrv_Process (mySrv as mySrv_t ptr) MYSOCK_EXPORT
             ' ---
             if mySrv->onTimeOut <> 0 then
                 mySrv->onTimeOut(mySrv, i, mySrv->peers[i].recv_buff, mySrv->peers[i].recv_buff_ofset, mySrv->peers[i].recv_buff_len)
+                mySrv->peers[i].is_receiving = 0
             end if
             ' ---
             disconnect = 1
         end if
         ' ---
         if disconnect then
-            __closesocket(mySrv->peers[i].sock) ' just to be sure
             if mySrv->onDisconnect <> NULL then
-                mySrv->onDisconnect(mySrv, i)
+                if mySrv->peers[i].is_receiving then
+                    mySrv->onDisconnect(mySrv, i, mySrv->peers[i].recv_buff, mySrv->peers[i].recv_buff_ofset, mySrv->peers[i].recv_buff_len)
+                else
+                    mySrv->onDisconnect(mySrv, i, 0, 0, 0)
+                end if
             end if
-            PEER_RESET(mySrv, i)
+            ' ---
+            closesocket(mySrv->peers[i].sock)
+            mySrv->peers[i].sock = INVALID_SOCKET
+            ' ---
+            if mySrv->peers[i].recv_buff <> 0 then deallocate(mySrv->peers[i].recv_buff): mySrv->peers[i].recv_buff = 0
+            ' ---
             mySrv->peers_count -= 1
         end if
     next
@@ -706,7 +718,7 @@ function MySrv_Close (mySrv as mySrv_t ptr, peer_id as integer) as integer MYSOC
     if not PEER_VALID(mySrv, peer_id) then return -1
     if not PEER_CONNECTED(mySrv, peer_id) then return 0
     ' ---
-    if __closesocket(mySrv->peers[peer_id].sock) = 0 then return 1
+    if shutdown(mySrv->peers[peer_id].sock, 1) = 0 then return 1
     return 0
 end function
 

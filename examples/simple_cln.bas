@@ -1,6 +1,6 @@
 #include "mysock.bi"
 
-declare sub onDisconnect (myCln as myCln_t ptr)
+declare sub onDisconnect (myCln as myCln_t ptr, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
 declare sub onRecv (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as uinteger)
 
 ' ---------------------------------------------------------------------------- '
@@ -23,8 +23,17 @@ if MyCln_Connect(cln, 5) = 0 then
     print "Unable to connect"
     end
 end if
-
 print "Connected to "; MyCln_GetSrvIpStr(cln, 1)
+
+' Loop until the server said Hi! (see onRecv function)
+print "Awaiting server response ..."
+dim shared as byte start_sending = 0
+do
+    MyCln_Process(cln)
+    sleep(100)
+loop until start_sending = 1
+
+' Server replied, start sending messages
 print "Now sending some messages ..."
 
 ' Don't forget to send the ending \0 caracter (len(msg) + 1)
@@ -32,7 +41,11 @@ print "Now sending some messages ..."
 ' do cast(zstring ptr, data_)
 dim as zstring * 100 msg
 
-msg = "Hello!"
+' We don't call MyCln_Process while sending these messages because we don't except
+' any answer from the server. But in practice, you should Process a Client or
+' a Server in the main loop of your program
+
+msg = "Hello Server!"
 print "1- " ; MyCln_Send(cln, @msg, len(msg) + 1) ; " bytes sent"
 sleep 2000
 
@@ -48,9 +61,6 @@ msg = "Good bye!"
 print "4- " ; MyCln_Send(cln, @msg, len(msg) + 1) ; " bytes sent"
 sleep 1000
 
-' Note: you see that we don't call the MyCln_Process function since the server will not
-' send any data in this example
-
 ' Destroy the client, this function will also disconnect it, and call MyCln_Process() once
 ' so that the disconnect callback will be trigered
 MyCln_Destroy(cln)
@@ -64,11 +74,16 @@ sleep
 ' ---------------------------------------------------------------------------- '
 
 ' Called when a client disconnects
-sub onDisconnect (myCln as myCln_t ptr)
+sub onDisconnect (myCln as myCln_t ptr, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
     print "Disconnected!"
 end sub
 
 ' Called when data is received from the server
 sub onRecv (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as uinteger)
-    ' The server will send nothing for this example
+    ' Get a ZString pointer
+    dim as zstring ptr str_data = cast(zstring ptr, data_)
+    ' print the received data
+    print "> Data from server: " + str(*str_data)
+    ' Indicate that the server said Hi! And start sending messages
+    start_sending = 1
 end sub

@@ -23,7 +23,7 @@ _MySock_Shutdown()
 
 ; ===============================================================================================================================
 
-Func _OnDisconnect($pCln)
+Func _OnDisconnect($pCln, $bPartialData, $iExceptedLen)
 	ConsoleWrite("! Disconnected" & @CRLF)
 EndFunc
 

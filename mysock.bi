@@ -31,7 +31,7 @@ type mySrv_t as _mySrv_t
 type myCln_t as _myCln_t
 
 type mySrvOnConnectProc as sub 		(mySrv as mySrv_t ptr, peer_id as integer)
-type mySrvOnDisconnectProc as sub 	(mySrv as mySrv_t ptr, peer_id as integer)
+type mySrvOnDisconnectProc as sub 	(mySrv as mySrv_t ptr, peer_id as integer, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
 'type mySrvOnDataRecvProc as sub     (mySrv as mySrv_t ptr, peer_id as integer, data_ as ubyte ptr, data_len as MYSIZE, total_len as MYSIZE, is_end as integer)
 type mySrvOnPacketRecvProc as sub 	(mySrv as mySrv_t ptr, peer_id as integer, data_ as ubyte ptr, data_len as MYSIZE)
 type mySrvOnReceivingProc as sub 	(mySrv as mySrv_t ptr, peer_id as integer, received_bytes as MYSIZE, total_bytes as MYSIZE)
@@ -39,7 +39,7 @@ type mySrvOnTimeOutProc as sub      (mySrv as mySrv_t ptr, peer_id as integer, p
 
 type mySrvIterateProc as function 	(mySrv as mySrv_t ptr, peer_id as integer, user_data as any ptr) as integer
 
-type myClnOnDisconnectProc as sub 	(myCln as myCln_t ptr)
+type myClnOnDisconnectProc as sub 	(myCln as myCln_t ptr, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
 'type myClnOnDataRecvProc as sub     (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as MYSIZE, total_len as MYSIZE, is_end as integer)
 type myClnOnPacketRecvProc as sub 	(myCln as myCln_t ptr, data_ as ubyte ptr, data_len as MYSIZE)
 type myClnOnReceivingProc as sub 	(myCln as myCln_t ptr, received_bytes as MYSIZE, total_bytes as MYSIZE)

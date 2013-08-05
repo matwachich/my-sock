@@ -1,13 +1,14 @@
 #include "mysock.bi"
 
 declare sub onConnect (mySrv as mySrv_t ptr, peer_id as integer)
-declare sub onDisconnect (mySrv as mySrv_t ptr, peer_id as integer)
+declare sub onDisconnect (mySrv as mySrv_t ptr, peer_id as integer, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
 declare sub onRecv (mySrv as mySrv_t ptr, peer_id as integer, data_ as ubyte ptr, data_len as uinteger)
 
 ' ---------------------------------------------------------------------------- '
 ' Launche this server, and then simple_cln.exe
-' The client will connect to the server, send a couple of messages
-' and then disconnect, which will lead the server to shutdown
+' The client will connect to the server, wait the server's greating, 
+' send a couple of messages and then disconnect, 
+' which will lead the server to shutdown
 ' ---------------------------------------------------------------------------- '
 
 dim shared as integer keep_going = 1
@@ -54,10 +55,16 @@ sleep
 sub onConnect (mySrv as mySrv_t ptr, peer_id as integer)
     ' Just notifiy
     print "+ Peer: "; peer_id; " [" ; MySrv_PeerGetAddrStr(mySrv, peer_id, 1) ; "]"
+    ' ---
+    ' Send greatings to the new connected client
+    ' NB: don't forget to send the last \0 caracter, because the receiver on the other side
+    ' will simple do cast(zstring ptr, data_)
+    dim as string hi_msg = "Hello peer " + str(peer_id)
+    MySrv_PeerSend(mySrv, peer_id, cast(ubyte ptr, strptr(hi_msg)), len(hi_msg) + 1)
 end sub
 
 ' Called when a peer disconnects from the server
-sub onDisconnect (mySrv as mySrv_t ptr, peer_id as integer)
+sub onDisconnect (mySrv as mySrv_t ptr, peer_id as integer, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
     ' Notifiy
     print "- Peer: "; peer_id; " [" ; MySrv_PeerGetAddrStr(mySrv, peer_id, 1) ; "]"
     ' Close the server when a client disconnects

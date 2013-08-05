@@ -26,9 +26,10 @@ _MySock_Shutdown()
 
 Func _OnConnect($pSrv, $iPeerId)
 	ConsoleWrite("+ Peer: " & $iPeerId & " [" & _MySrv_PeerGetAddrStr($pSrv, $iPeerId, 1) & "]" & @CRLF)
+	_MySrv_PeerSend($pSrv, $iPeerId, StringToBinary("Salut client! Binvenu sur le serveur ;)"))
 EndFunc
 
-Func _OnDisconnect($pSrv, $iPeerId)
+Func _OnDisconnect($pSrv, $iPeerId, $bPartialData, $iExceptedLen)
 	ConsoleWrite("! Peer: " & $iPeerId & " [" & _MySrv_PeerGetAddrStr($pSrv, $iPeerId, 1) & "]" & @CRLF)
 	$iRun = 0
 EndFunc
