@@ -423,6 +423,7 @@ sub MyCln_Process (myCln as myCln_t ptr) MYSOCK_EXPORT
             if myCln->is_receiving = 0 then ' receiving packet size
                 if myCln->recv_buff_ofset = sizeof(ulong) then ' complete packet size
                     dim as ulong packet_size = *cast(ulong ptr, myCln->recv_buff)
+                    packet_size = ntohl(packet_size)
                     ' ---
                     myCln->recv_buff = reallocate(myCln->recv_buff, packet_size)
                     myCln->recv_buff_len = packet_size
@@ -500,7 +501,8 @@ function MyCln_Send (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as MYSIZ
     if not CLN_CONNECTED(myCln) then return 0
     
     ' send packet size
-    if send(myCln->sock, cast(ubyte ptr, @data_len), sizeof(ulong), 0) <> sizeof(ulong) then return -1
+    dim as MYSIZE net_data_len = htonl(data_len)
+    if send(myCln->sock, cast(ubyte ptr, @net_data_len), sizeof(ulong), 0) <> sizeof(ulong) then return -1
     
     dim as integer total = 0, remain = data_len, n = 0
 

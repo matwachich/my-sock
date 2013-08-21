@@ -586,6 +586,7 @@ sub MySrv_Process (mySrv as mySrv_t ptr) MYSOCK_EXPORT
                 if mySrv->peers[i].is_receiving = 0 then ' received packet size
                     if mySrv->peers[i].recv_buff_ofset = sizeof(ulong) then ' complete packet size
                         dim as ulong packet_size = *cast(ulong ptr, mySrv->peers[i].recv_buff)
+                        packet_size = ntohl(packet_size)
                         ' ---
                         mySrv->peers[i].recv_buff = reallocate(mySrv->peers[i].recv_buff, packet_size)
                         mySrv->peers[i].recv_buff_len = packet_size ' ***
@@ -668,7 +669,8 @@ function MySrv_PeerSend (mySrv as mySrv_t ptr, peer_id as integer, data_ as ubyt
     if not PEER_CONNECTED(mySrv, peer_id) then return 0
     
     ' send packet size
-    if send(mySrv->peers[peer_id].sock, cast(ubyte ptr, @data_len), sizeof(ulong), 0) <> sizeof(ulong) then return -1
+    dim as MYSIZE net_data_len = htonl(data_len)
+    if send(mySrv->peers[peer_id].sock, cast(ubyte ptr, @net_data_len), sizeof(ulong), 0) <> sizeof(ulong) then return -1
     
     dim as integer total = 0, remain = data_len, n = 0
 
