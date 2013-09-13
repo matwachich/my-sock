@@ -120,6 +120,8 @@ type _mySrv_t
     as mySrvOnReceivingProc onReceiving		' on packet receiving
     as mySrvOnTimeOutProc onTimeOut 		' on packet reception timeout
     
+    as mySockPacketPrepareProc packetPrepare
+    
     as any ptr user_data	' user data
 end type
 
@@ -161,6 +163,8 @@ function MySrv_Create (max_peers as uinteger, protocol as protocol_e) as mySrv_t
     mySrv->onPacketRecv = 0
     mySrv->onReceiving = 0
     mySrv->onTimeOut = 0
+    ' ---
+    mySrv->packetPrepare = 0
     ' ---
     mySrv->user_data = 0
     ' ---
@@ -470,6 +474,7 @@ end function
  '  MYSOCK_CB_PACKETRECV    Set the onPacketRecv callback (mySrvOnPacketRecvProc)
  '  MYSOCK_CB_RECEIVING     Set the onReceiving callback (mySrvOnReceivingProc)
  '  MYSOCK_CB_TIMEOUT       Set the onTimeOut callback (mySrvOnTimeOutProc)
+ '  MYSOCK_CB_PACKET_PREPARE  Set the packet preparation callback (mySockPacketPrepareProc)
  ' @param proc [in] Callback function pointer
  '/
 sub MySrv_SetCallback (mySrv as mySrv_t ptr, callback as callback_e, proc as any ptr)
@@ -484,6 +489,8 @@ sub MySrv_SetCallback (mySrv as mySrv_t ptr, callback as callback_e, proc as any
             mySrv->onReceiving = proc
         case MYSOCK_CB_TIMEOUT 
             mySrv->onTimeOut = proc
+        case MYSOCK_CB_PACKET_PREPARE
+            mySrv->packetPrepare = proc
     end select
 end sub
 
@@ -604,6 +611,10 @@ sub MySrv_Process (mySrv as mySrv_t ptr) MYSOCK_EXPORT
                     ' ---
                     if mySrv->peers[i].recv_buff_ofset = mySrv->peers[i].recv_buff_len then ' packet complete ' ***
                         if mySrv->onPacketRecv <> NULL then
+                            if mySrv->packetPrepare <> 0 then
+                                mySrv->packetPrepare(mySrv->peers[i].recv_buff, mySrv->peers[i].recv_buff_len, MYSOCK_PACKET_RECV)
+                            end if
+                            ' ---
                             mySrv->onPacketRecv(mySrv, i, mySrv->peers[i].recv_buff, mySrv->peers[i].recv_buff_len)
                         end if
                         ' ---
@@ -671,6 +682,11 @@ function MySrv_PeerSend (mySrv as mySrv_t ptr, peer_id as integer, data_ as ubyt
     ' send packet size
     dim as MYSIZE net_data_len = htonl(data_len)
     if send(mySrv->peers[peer_id].sock, cast(ubyte ptr, @net_data_len), sizeof(ulong), 0) <> sizeof(ulong) then return -1
+    
+    ' prepare packet
+    if mySrv->packetPrepare <> 0 then
+        mySrv->packetPrepare(data_, data_len, MYSOCK_PACKET_SEND)
+    end if
     
     dim as integer total = 0, remain = data_len, n = 0
 

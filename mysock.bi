@@ -20,6 +20,12 @@ enum callback_e
     MYSOCK_CB_PACKETRECV
     MYSOCK_CB_RECEIVING
     MYSOCK_CB_TIMEOUT
+    MYSOCK_CB_PACKET_PREPARE
+end enum
+
+enum packet_type_e
+    MYSOCK_PACKET_SEND
+    MYSOCK_PACKET_RECV
 end enum
 
 ' ---
@@ -44,6 +50,8 @@ type myClnOnDisconnectProc as sub 	(myCln as myCln_t ptr, partial_data as ubyte 
 type myClnOnPacketRecvProc as sub 	(myCln as myCln_t ptr, data_ as ubyte ptr, data_len as MYSIZE)
 type myClnOnReceivingProc as sub 	(myCln as myCln_t ptr, received_bytes as MYSIZE, total_bytes as MYSIZE)
 type myClnOnTimeOutProc as sub      (myCln as myCln_t ptr, partial_data as ubyte ptr, data_len as MYSIZE, excepted_len as MYSIZE)
+
+type mySockPacketPrepareProc as sub (packet_data as ubyte ptr, data_len as MYSIZE, flag as packet_type_e)
 
 ' ---
 ' ---

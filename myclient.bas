@@ -59,6 +59,8 @@ type _myCln_t
     as myClnOnReceivingProc onReceiving
     as myClnOnTimeOutProc onTimeOut
     
+    as mySockPacketPrepareProc packetPrepare
+    
     as any ptr user_data
 end type
 
@@ -110,6 +112,10 @@ function MyCln_Create (host as zstring, port as ushort, protocol as protocol_e) 
     myCln->onPacketRecv = 0
     myCln->onReceiving = 0
     myCln->onTimeOut = 0
+    ' ---
+    myCln->packetPrepare = 0
+    ' ---
+    myCln->user_data = 0
     ' ---
     return myCln
 end function
@@ -357,10 +363,11 @@ end function
  '
  ' @param myCln [in] Client pointer
  ' @param callback [in] Which callback to set
- '  MYSOCK_CB_DISCONNECT    Set the onDisconnect callback (myClnOnDisconnectProc)
- '  MYSOCK_CB_PACKETRECV    Set the onPacketRecv callback (myClnOnPacketRecvProc)
- '  MYSOCK_CB_RECEIVING     Set the onReceiving callback (myClnOnReceivingProc)
- '  MYSOCK_CB_TIMEOUT       Set the onTimeOut callback (myClnOnTimeOutProc)
+ '  MYSOCK_CB_DISCONNECT      Set the onDisconnect callback (myClnOnDisconnectProc)
+ '  MYSOCK_CB_PACKETRECV      Set the onPacketRecv callback (myClnOnPacketRecvProc)
+ '  MYSOCK_CB_RECEIVING       Set the onReceiving callback (myClnOnReceivingProc)
+ '  MYSOCK_CB_TIMEOUT         Set the onTimeOut callback (myClnOnTimeOutProc)
+ '  MYSOCK_CB_PACKET_PREPARE  Set the packet preparation callback (mySockPacketPrepareProc)
  ' @param proc [in] Callback function pointer
  '/
 sub MyCln_SetCallback (myCln as myCln_t ptr, callback as callback_e, proc as any ptr)
@@ -373,6 +380,8 @@ sub MyCln_SetCallback (myCln as myCln_t ptr, callback as callback_e, proc as any
             myCln->onReceiving = proc
         case MYSOCK_CB_TIMEOUT 
             myCln->onTimeOut = proc
+        case MYSOCK_CB_PACKET_PREPARE
+            myCln->packetPrepare = proc
     end select
 end sub
 
@@ -441,6 +450,10 @@ sub MyCln_Process (myCln as myCln_t ptr) MYSOCK_EXPORT
                 ' ---
                 if myCln->recv_buff_ofset = myCln->recv_buff_len then ' packet complete
                     if myCln->onPacketRecv <> NULL then
+                        if myCln->packetPrepare <> 0 then
+                            myCln->packetPrepare(myCln->recv_buff, myCln->recv_buff_len, MYSOCK_PACKET_RECV)
+                        end if
+                        ' ---
                         myCln->onPacketRecv(myCln, myCln->recv_buff, myCln->recv_buff_len)
                     end if
                     ' ---
@@ -503,6 +516,11 @@ function MyCln_Send (myCln as myCln_t ptr, data_ as ubyte ptr, data_len as MYSIZ
     ' send packet size
     dim as MYSIZE net_data_len = htonl(data_len)
     if send(myCln->sock, cast(ubyte ptr, @net_data_len), sizeof(ulong), 0) <> sizeof(ulong) then return -1
+    
+    ' prepare packet
+    if myCln->packetPrepare <> 0 then
+        myCln->packetPrepare(data_, data_len, MYSOCK_PACKET_SEND)
+    end if
     
     dim as integer total = 0, remain = data_len, n = 0
 

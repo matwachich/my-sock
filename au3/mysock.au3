@@ -45,6 +45,7 @@
 ;_MySrv_GetSocket
 ;_MySrv_SetUserData
 ;_MySrv_GetUserData
+;_MySrv_SetCallback
 ;_MySrv_SetCallbacks
 ;_MySrv_Process
 ;_MySrv_PeerSend
@@ -72,6 +73,7 @@
 ;_MyCln_GetHost
 ;_MyCln_GetHostStr
 ;_MyCln_GetSrvIp
+;_MyCln_SetCallback
 ;_MyCln_SetCallbacks
 ;_MyCln_Process
 ;_MyCln_Send
@@ -87,13 +89,6 @@ Enum _	; protocol_e
 	$MYSOCK_PROT_AUTO, _
 	$MYSOCK_PROT_IPV4, _
 	$MYSOCK_PROT_IPV6
-; ===============================================================================================================================
-
-; ===============================================================================================================================
-; Internals
-
-; Global mySock dll handle
-Global $__gMySock_hDll = -1
 
 ; Callbacks IDs
 Enum _
@@ -105,7 +100,20 @@ Enum _
 	$MYSOCK_CB_CLN_ONDISCONNECT, _
 	$MYSOCK_CB_CLN_ONPACKETRECV, _
 	$MYSOCK_CB_CLN_ONRECEIVING, _
-	$MYSOCK_CB_CLN_ONTIMEOUT
+	$MYSOCK_CB_CLN_ONTIMEOUT, _
+	$MYSOCK_CB_PACKET_PREPARE
+
+; Packet type
+Enum _
+	$MYSOCK_PACKET_SEND, _
+	$MYSOCK_PACKET_RECV
+; ===============================================================================================================================
+
+; ===============================================================================================================================
+; Internals
+
+; Global mySock dll handle
+Global $__gMySock_hDll = -1
 
 Global $__gMySock_aCallbacks[9][3] = [ _
 	[0, "none:cdecl", "ptr;int"], _					; mySrvOnConnectProc
@@ -407,11 +415,25 @@ Func _MySrv_GetUserData($pMySrv)
 EndFunc
 
 
+;~ declare sub         MySrv_SetCallback       (mySrv as mySrv_t ptr, callback as callback_e, proc as any ptr)
+Func _MySrv_SetCallback($pMySrv, $iCallback, $pProc = 0)
+	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
+	; ---
+	DllCall($__gMySock_hDll, "none:cdecl", "MySrv_SetCallback", "ptr", $pMySrv, "int", $iCallback, "ptr", $pProc)
+	If @error Then
+		Local $err = @error
+		If Not @Compiled Then ConsoleWrite("! DllCall error " & $err & " (MySrv_SetCallback)" & @CRLF)
+		Return SetError($err, 0, 0)
+	EndIf
+	; ---
+	Return 1
+EndFunc
+
 ;~ declare sub 			MySrv_SetCallbacks	(mySrv as mySrv_t ptr, onConnect as mySrvOnConnectProc, onDisconnect as mySrvOnDisconnectProc, onPacketRecv as mySrvOnRecvProc, onReceiving as mySrvOnReceivingProc, onTimeOut as mySrvOnTimeOutProc)
 Func _MySrv_SetCallbacks($pMySrv, $sOnConnect, $sOnDisconnect, $sOnPacketRecv, $sOnReceiving, $sOnTimeOut)
 	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
 	; ---
-	Local $ret = DllCall($__gMySock_hDll, "none:cdecl", "MySrv_SetCallbacks", "ptr", $pMySrv, _
+	DllCall($__gMySock_hDll, "none:cdecl", "MySrv_SetCallbacks", "ptr", $pMySrv, _
 		"ptr", __MySock_SetCallback($sOnConnect,	$MYSOCK_CB_SRV_ONCONNECT), _
 		"ptr", __MySock_SetCallback($sOnDisconnect,	$MYSOCK_CB_SRV_ONDISCONNECT), _
 		"ptr", __MySock_SetCallback($sOnPacketRecv,	$MYSOCK_CB_SRV_ONPACKETRECV), _
@@ -847,6 +869,20 @@ Func _MyCln_GetSrvIp($pMyCln)
 	Return DllStructGetData($struct, 1)
 EndFunc
 
+
+;~ declare sub         MyCln_SetCallback   (myCln as myCln_t ptr, callback as callback_e, proc as any ptr)
+Func _MyCln_SetCallback($pMyCln, $iCallback, $pProc = 0)
+	If $__gMySock_hDll = -1 Then Return SetError(-1, 0, 0)
+	; ---
+	DllCall($__gMySock_hDll, "none:cdecl", "MyCln_SetCallback", "ptr", $pMyCln, "int", $iCallback, "ptr", $pProc)
+	If @error Then
+		Local $err = @error
+		If Not @Compiled Then ConsoleWrite("! DllCall error " & $err & " (MyCln_SetCallback)" & @CRLF)
+		Return SetError($err, 0, 0)
+	EndIf
+	; ---
+	Return 1
+EndFunc
 
 ;~ declare sub 			MyCln_SetCallbacks	(myCln as myCln_t ptr, onDisconnect as myClnOnDisconnectProc, onPacketRecv as myClnOnRecvProc, onReceiving as myClnOnReceivingProc, onTimeOut as myClnOnTimeOutProc)
 Func _MyCln_SetCallbacks($pMyCln, $sOnDisconnect, $sOnPacketRecv, $sOnReceiving, $sOnTimeOut)
